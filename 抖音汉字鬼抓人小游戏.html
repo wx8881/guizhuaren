@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>汉字鬼抓人小游戏</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      overflow: auto;
+    }
+    .game-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .game-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      border: 3px solid #4a90e2;
+      background: #000;
+      display: block;
+      box-shadow: 0 0 20px rgba(74, 144, 226, 0.5);
+    }
+    
+    /* 主菜单 */
+    .main-menu {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      color: #fff;
+      padding: 40px;
+      border-radius: 15px;
+      text-align: center;
+      z-index: 2000;
+      min-width: 400px;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+    }
+    .main-menu.hidden {
+      display: none;
+    }
+    .main-menu h1 {
+      font-size: 36px;
+      margin-bottom: 30px;
+      color: #FFD700;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    .menu-button {
+      padding: 15px 30px;
+      font-size: 18px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      margin: 10px;
+      width: 200px;
+      transition: all 0.3s;
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+    }
+    .menu-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .menu-button:active {
+      transform: scale(0.95);
+    }
+    .difficulty-selector {
+      margin: 20px 0;
+    }
+    .difficulty-selector label {
+      display: block;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    .difficulty-selector input[type="radio"] {
+      margin-right: 8px;
+    }
+    
+    /* 左侧面板 */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      min-width: 180px;
+    }
+    
+    /* 右侧面板 */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      min-width: 180px;
+    }
+    
+    /* 游戏内UI */
+    .info-panel {
+      color: #fff;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    .info-panel div {
+      margin: 5px 0;
+    }
+    
+    /* 技能按钮容器 */
+    .skills-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .skills-toggle {
+      padding: 8px 15px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 5px;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+    .skills-toggle:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .skills-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .skills-buttons.hidden {
+      display: none;
+    }
+    .skill-button {
+      padding: 8px 12px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid #888;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      position: relative;
+      width: 100%;
+    }
+    .skill-button:hover:not(:disabled) {
+      background: #fff;
+      transform: scale(1.02);
+    }
+    .skill-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .skill-cooldown {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 10px;
+    }
+    
+    /* 控制面板 */
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    /* 模式选择器 */
+    .mode-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .mode-button {
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border: 2px solid #888;
+      border-radius: 5px;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .mode-button:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+    .mode-button.active {
+      background-color: #4CAF50;
+      border-color: #4CAF50;
+    }
+    
+    /* 暂停按钮 */
+    .pause-button {
+      padding: 8px 20px;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 5px;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .pause-button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* 游戏结束/暂停界面 */
+    .overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      color: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      font-size: 24px;
+      display: none;
+      z-index: 1000;
+      min-width: 300px;
+    }
+    .overlay.show {
+      display: block;
+    }
+    .overlay h2 {
+      margin-bottom: 20px;
+      color: #FFD700;
+    }
+    .overlay .stats {
+      margin: 15px 0;
+      font-size: 18px;
+      line-height: 1.8;
+    }
+    .overlay button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .overlay button:hover {
+      transform: scale(1.05);
+    }
+    
+    /* 最高分显示 */
+    .high-score {
+      color: #FFD700;
+      font-weight: bold;
+    }
+    
+    /* 成就系统 */
+    .achievement-notification {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      color: #000;
+      padding: 15px 25px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 1500;
+      display: none;
+      box-shadow: 0 5px 15px rgba(255, 215, 0, 0.5);
+      animation: achievementPop 0.5s ease-out;
+    }
+    .achievement-notification.show {
+      display: block;
+    }
+    @keyframes achievementPop {
+      0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+      50% { transform: translateX(-50%) scale(1.1); }
+      100% { transform: translateX(-50%) scale(1); opacity: 1; }
+    }
+    
+    /* 统计面板 */
+    .stats-panel {
+      color: #fff;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .stats-panel h3 {
+      margin-bottom: 8px;
+      color: #FFD700;
+      font-size: 14px;
+    }
+    .stats-panel div {
+      margin: 3px 0;
+      font-size: 11px;
+    }
+    
+    /* 成就面板 */
+    .achievements-panel {
+      color: #fff;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .achievements-panel h3 {
+      margin-bottom: 8px;
+      color: #FFD700;
+      font-size: 14px;
+    }
+    .achievement-item {
+      margin: 5px 0;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      font-size: 11px;
+    }
+    .achievement-item.unlocked {
+      background: rgba(255, 215, 0, 0.2);
+      border: 1px solid #FFD700;
+    }
+    .achievement-item .achievement-icon {
+      display: inline-block;
+      margin-right: 5px;
+    }
+    
+    /* 道具效果提示 */
+    .powerup-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 24px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      z-index: 500;
+      display: none;
+      pointer-events: none;
+    }
+    .powerup-indicator.show {
+      display: block;
+      animation: powerupFade 2s ease-out;
+    }
+    @keyframes powerupFade {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1) translateY(-50px); }
+    }
+    
+    /* 粒子效果容器 */
+    .particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrapper">
+    <div class="game-container">
+      <canvas id="gameCanvas" width="600" height="600"></canvas>
+      
+      <!-- 主菜单 -->
+      <div id="mainMenu" class="main-menu">
+        <h1>🎮 汉字鬼抓人</h1>
+        <div class="difficulty-selector">
+          <label><input type="radio" name="difficulty" value="easy" checked> 简单</label>
+          <label><input type="radio" name="difficulty" value="normal"> 普通</label>
+          <label><input type="radio" name="difficulty" value="hard"> 困难</label>
+        </div>
+        <button class="menu-button" onclick="startGame()">开始游戏</button>
+        <button class="menu-button" onclick="showInstructions()">游戏说明</button>
+        <div id="instructions" style="display: none; margin-top: 20px; text-align: left; font-size: 14px; line-height: 1.8;">
+          <h3>游戏说明：</h3>
+          <p>🎯 <strong>目标：</strong>尽可能长时间躲避鬼的追捕</p>
+          <p>⌨️ <strong>操作：</strong>方向键或WASD移动</p>
+          <p>🛡️ <strong>技能：</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>急急如意令：5秒无敌</li>
+            <li>妈咪妈咪哄：清除所有鬼</li>
+            <li>时间暂停：减速鬼5秒</li>
+          </ul>
+          <p>⭐ <strong>收集：</strong>迷宫模式中收集黄色圆点获得分数</p>
+          <p>⚠️ <strong>危险：</strong>避开红色"鬼"和绿色"刺"</p>
+          <button class="menu-button" onclick="hideInstructions()" style="width: auto; margin-top: 10px;">返回</button>
+        </div>
+      </div>
+      
+      <!-- 游戏结束/暂停界面 -->
+      <div id="gameOver" class="overlay">
+        <h2>游戏结束！</h2>
+        <div id="finalStats" class="stats"></div>
+        <button onclick="restartGame()">重新开始</button>
+        <button onclick="showMainMenu()">返回主菜单</button>
+      </div>
+      
+      <div id="pauseOverlay" class="overlay">
+        <h2>⏸️ 游戏暂停</h2>
+        <button onclick="resumeGame()">继续游戏</button>
+        <button onclick="showMainMenu()">返回主菜单</button>
+      </div>
+      
+      <!-- 成就通知 -->
+      <div id="achievementNotification" class="achievement-notification"></div>
+      
+      <!-- 道具效果提示 -->
+      <div id="powerupIndicator" class="powerup-indicator"></div>
+    </div>
+    
+    <!-- 左侧面板 -->
+    <div class="left-panel">
+      <div class="info-panel">
+        <div id="timer">⏱️ 时间: 0秒</div>
+        <div id="score">⭐ 分数: 0</div>
+        <div id="highScore" class="high-score">🏆 最高分: <span id="highScoreValue">0</span></div>
+        <div id="mode">🎮 模式: 迷宫模式</div>
+        <div id="ghostCount">👻 鬼数: 0</div>
+      </div>
+      
+      <!-- 技能按钮（可折叠） -->
+      <div class="skills-container">
+        <button class="skills-toggle" id="skillsToggle">技能 ▼</button>
+        <div class="skills-buttons hidden" id="skillsButtons">
+          <button id="invincibleButton" class="skill-button">
+            <div>急急如意令</div>
+            <div style="font-size: 10px; color: #666;">5秒无敌</div>
+            <div class="skill-cooldown hidden" id="invincibleCooldown"></div>
+          </button>
+          <button id="clearGhostsButton" class="skill-button">
+            <div>妈咪妈咪哄</div>
+            <div style="font-size: 10px; color: #666;">清除鬼</div>
+            <div class="skill-cooldown hidden" id="clearGhostsCooldown"></div>
+          </button>
+          <button id="slowGhostsButton" class="skill-button">
+            <div>时间暂停</div>
+            <div style="font-size: 10px; color: #666;">减速鬼</div>
+            <div class="skill-cooldown hidden" id="slowGhostsCooldown"></div>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 统计面板 -->
+      <div class="stats-panel">
+        <h3>📊 游戏统计</h3>
+        <div id="totalGames">总游戏: 0</div>
+        <div id="totalTime">总时长: 0秒</div>
+        <div id="totalScore">总分数: 0</div>
+        <div id="totalCollectibles">收集物品: 0</div>
+        <div id="totalGhostsKilled">清除鬼数: 0</div>
+      </div>
+      
+      <!-- 成就面板 -->
+      <div class="achievements-panel">
+        <h3>🏆 成就</h3>
+        <div id="achievementsList"></div>
+      </div>
+    </div>
+    
+    <!-- 右侧面板 -->
+    <div class="right-panel">
+      <div class="control-panel">
+        <button class="pause-button" id="pauseButton">⏸️ 暂停</button>
+        <div class="mode-selector">
+          <button id="mazeModeBtn" class="mode-button active">迷宫模式</button>
+          <button id="freeModeBtn" class="mode-button">自由模式</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 游戏状态
+    let gameMode = 'maze';
+    let gameOver = false;
+    let gamePaused = false;
+    let gameStarted = false;
+    let difficulty = 'normal';
+    let startTime = Date.now();
+    let pausedTime = 0;
+    let totalPausedTime = 0;
+    let invincibleMode = false;
+    let invincibleTime = 0;
+    let slowGhostsMode = false;
+    let slowGhostsTime = 0;
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem('highScore') || '0');
+    
+    // 技能冷却时间
+    const skillCooldowns = {
+      invincible: 0,
+      clearGhosts: 0,
+      slowGhosts: 0
+    };
+    const skillCooldownDurations = {
+      invincible: 10000, // 10秒
+      clearGhosts: 15000, // 15秒
+      slowGhosts: 20000  // 20秒
+    };
+    
+    // 游戏配置
+    const boxSize = 30;
+    const canvasSize = 600;
+    const CELL_SIZE = 30;
+    const COLS = Math.floor(canvas.width / CELL_SIZE);
+    const ROWS = Math.floor(canvas.height / CELL_SIZE);
+    
+    // 游戏对象
+    let player;
+    let ghosts = [];
+    let walls = [];
+    let thorns = [];
+    let collectibles = [];
+    let collectiblesCollected = 0;
+    
+    // 难度配置
+    const difficultyConfig = {
+      easy: { ghostSpawnRate: 3000, maxGhosts: 8, ghostSpeed: 0.08 },
+      normal: { ghostSpawnRate: 2000, maxGhosts: 12, ghostSpeed: 0.12 },
+      hard: { ghostSpawnRate: 1000, maxGhosts: 18, ghostSpeed: 0.18 }
+    };
+    
+    // ========== 成就系统 ==========
+    const achievements = {
+      firstGame: { id: 'firstGame', name: '初次体验', desc: '完成第一局游戏', icon: '🎮', unlocked: false },
+      survivor10: { id: 'survivor10', name: '生存10秒', desc: '存活超过10秒', icon: '⏱️', unlocked: false },
+      survivor30: { id: 'survivor30', name: '生存30秒', desc: '存活超过30秒', icon: '⏰', unlocked: false },
+      survivor60: { id: 'survivor60', name: '生存1分钟', desc: '存活超过60秒', icon: '🏆', unlocked: false },
+      collector10: { id: 'collector10', name: '收集者', desc: '收集10个物品', icon: '⭐', unlocked: false },
+      collector50: { id: 'collector50', name: '收集大师', desc: '收集50个物品', icon: '💎', unlocked: false },
+      ghostKiller: { id: 'ghostKiller', name: '鬼杀手', desc: '清除10个鬼', icon: '👻', unlocked: false },
+      highScore: { id: 'highScore', name: '高分王', desc: '达到100分', icon: '🌟', unlocked: false },
+      perfect: { id: 'perfect', name: '完美游戏', desc: '一局内收集所有物品', icon: '✨', unlocked: false }
+    };
+    
+    // ========== 游戏统计 ==========
+    let gameStats = {
+      totalGames: parseInt(localStorage.getItem('totalGames') || '0'),
+      totalTime: parseInt(localStorage.getItem('totalTime') || '0'),
+      totalScore: parseInt(localStorage.getItem('totalScore') || '0'),
+      totalCollectibles: parseInt(localStorage.getItem('totalCollectibles') || '0'),
+      totalGhostsKilled: parseInt(localStorage.getItem('totalGhostsKilled') || '0')
+    };
+    
+    // ========== 粒子效果 ==========
+    let particles = [];
+    
+    function createParticles(x, y, count = 10, color = '#FFD700') {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          life: 30,
+          maxLife: 30,
+          color: color,
+          size: Math.random() * 3 + 2
+        });
+      }
+    }
+    
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        p.vy += 0.1; // 重力
+        
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+    
+    function drawParticles() {
+      for (const p of particles) {
+        const alpha = p.life / p.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    
+    // ========== 成就系统函数 ==========
+    function checkAchievements() {
+      const elapsed = Math.floor((Date.now() - startTime - totalPausedTime) / 1000);
+      const currentScore = score + elapsed * 2;
+      
+      // 检查成就
+      if (!achievements.firstGame.unlocked && gameStats.totalGames > 0) {
+        unlockAchievement('firstGame');
+      }
+      if (!achievements.survivor10.unlocked && elapsed >= 10) {
+        unlockAchievement('survivor10');
+      }
+      if (!achievements.survivor30.unlocked && elapsed >= 30) {
+        unlockAchievement('survivor30');
+      }
+      if (!achievements.survivor60.unlocked && elapsed >= 60) {
+        unlockAchievement('survivor60');
+      }
+      if (!achievements.collector10.unlocked && collectiblesCollected >= 10) {
+        unlockAchievement('collector10');
+      }
+      if (!achievements.collector50.unlocked && gameStats.totalCollectibles >= 50) {
+        unlockAchievement('collector50');
+      }
+      if (!achievements.ghostKiller.unlocked && gameStats.totalGhostsKilled >= 10) {
+        unlockAchievement('ghostKiller');
+      }
+      if (!achievements.highScore.unlocked && currentScore >= 100) {
+        unlockAchievement('highScore');
+      }
+    }
+    
+    function unlockAchievement(achievementId) {
+      if (achievements[achievementId] && !achievements[achievementId].unlocked) {
+        achievements[achievementId].unlocked = true;
+        showAchievementNotification(achievements[achievementId]);
+        saveAchievements();
+        updateAchievementsDisplay();
+      }
+    }
+    
+    function showAchievementNotification(achievement) {
+      const notification = document.getElementById('achievementNotification');
+      notification.textContent = `${achievement.icon} ${achievement.name} - ${achievement.desc}`;
+      notification.classList.add('show');
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+    
+    function saveAchievements() {
+      const achievementsData = {};
+      for (const key in achievements) {
+        achievementsData[key] = achievements[key].unlocked;
+      }
+      localStorage.setItem('achievements', JSON.stringify(achievementsData));
+    }
+    
+    function loadAchievements() {
+      const saved = localStorage.getItem('achievements');
+      if (saved) {
+        const achievementsData = JSON.parse(saved);
+        for (const key in achievementsData) {
+          if (achievements[key]) {
+            achievements[key].unlocked = achievementsData[key];
+          }
+        }
+      }
+      updateAchievementsDisplay();
+    }
+    
+    function updateAchievementsDisplay() {
+      const list = document.getElementById('achievementsList');
+      list.innerHTML = '';
+      for (const key in achievements) {
+        const ach = achievements[key];
+        const item = document.createElement('div');
+        item.className = `achievement-item ${ach.unlocked ? 'unlocked' : ''}`;
+        item.innerHTML = `<span class="achievement-icon">${ach.unlocked ? ach.icon : '🔒'}</span> ${ach.name}: ${ach.desc}`;
+        list.appendChild(item);
+      }
+    }
+    
+    // ========== 统计系统函数 ==========
+    function updateStats() {
+      document.getElementById('totalGames').textContent = `总游戏: ${gameStats.totalGames}`;
+      document.getElementById('totalTime').textContent = `总时长: ${gameStats.totalTime}秒`;
+      document.getElementById('totalScore').textContent = `总分数: ${gameStats.totalScore}`;
+      document.getElementById('totalCollectibles').textContent = `收集物品: ${gameStats.totalCollectibles}`;
+      document.getElementById('totalGhostsKilled').textContent = `清除鬼数: ${gameStats.totalGhostsKilled}`;
+    }
+    
+    function saveStats() {
+      localStorage.setItem('totalGames', gameStats.totalGames.toString());
+      localStorage.setItem('totalTime', gameStats.totalTime.toString());
+      localStorage.setItem('totalScore', gameStats.totalScore.toString());
+      localStorage.setItem('totalCollectibles', gameStats.totalCollectibles.toString());
+      localStorage.setItem('totalGhostsKilled', gameStats.totalGhostsKilled.toString());
+    }
+    
+    // ========== 道具效果提示 ==========
+    function showPowerupIndicator(text) {
+      const indicator = document.getElementById('powerupIndicator');
+      indicator.textContent = text;
+      indicator.classList.add('show');
+      setTimeout(() => {
+        indicator.classList.remove('show');
+      }, 2000);
+    }
+    
+    // ========== 主菜单功能 ==========
+    function startGame() {
+      difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+      document.getElementById('mainMenu').classList.add('hidden');
+      gameStarted = true;
+      gameOver = false;
+      gamePaused = false;
+      startTime = Date.now();
+      totalPausedTime = 0;
+      score = 0;
+      initMazeMode();
+      updateHighScoreDisplay();
+    }
+    
+    function showInstructions() {
+      document.getElementById('instructions').style.display = 'block';
+    }
+    
+    function hideInstructions() {
+      document.getElementById('instructions').style.display = 'none';
+    }
+    
+    function showMainMenu() {
+      gameStarted = false;
+      gamePaused = false;
+      gameOver = false;
+      document.getElementById('mainMenu').classList.remove('hidden');
+      document.getElementById('gameOver').classList.remove('show');
+      document.getElementById('pauseOverlay').classList.remove('show');
+    }
+    
+    function restartGame() {
+      gameOver = false;
+      gamePaused = false;
+      startTime = Date.now();
+      totalPausedTime = 0;
+      score = 0;
+      invincibleMode = false;
+      slowGhostsMode = false;
+      document.getElementById('gameOver').classList.remove('show');
+      if (gameMode === 'maze') {
+        initMazeMode();
+      } else {
+        initFreeMode();
+      }
+    }
+    
+    function pauseGame() {
+      if (!gameStarted || gameOver) return;
+      gamePaused = !gamePaused;
+      if (gamePaused) {
+        pausedTime = Date.now();
+        document.getElementById('pauseOverlay').classList.add('show');
+      } else {
+        totalPausedTime += Date.now() - pausedTime;
+        document.getElementById('pauseOverlay').classList.remove('show');
+      }
+    }
+    
+    function resumeGame() {
+      gamePaused = false;
+      totalPausedTime += Date.now() - pausedTime;
+      document.getElementById('pauseOverlay').classList.remove('show');
+    }
+    
+    // ========== 技能系统 ==========
+    function useSkill(skillName) {
+      if (skillCooldowns[skillName] > 0) return false;
+      
+      switch(skillName) {
+        case 'invincible':
+          invincibleMode = true;
+          invincibleTime = 0;
+          skillCooldowns[skillName] = skillCooldownDurations[skillName];
+          showPowerupIndicator('🛡️ 无敌模式！');
+          break;
+        case 'clearGhosts':
+          const killedCount = ghosts.length;
+          gameStats.totalGhostsKilled += killedCount;
+          ghosts.length = 0;
+          skillCooldowns[skillName] = skillCooldownDurations[skillName];
+          showPowerupIndicator(`👻 清除${killedCount}个鬼！`);
+          // 创建粒子效果
+          if (gameMode === 'maze') {
+            createParticles(player.x + CELL_SIZE / 2, player.y + CELL_SIZE / 2, 20, '#FF0000');
+          } else {
+            createParticles(player.x, player.y, 20, '#FF0000');
+          }
+          break;
+        case 'slowGhosts':
+          slowGhostsMode = true;
+          slowGhostsTime = 0;
+          skillCooldowns[skillName] = skillCooldownDurations[skillName];
+          showPowerupIndicator('⏸️ 时间暂停！');
+          break;
+      }
+      return true;
+    }
+    
+    function updateSkillCooldowns() {
+      for (const skill in skillCooldowns) {
+        if (skillCooldowns[skill] > 0) {
+          skillCooldowns[skill] -= 16;
+          const button = document.getElementById(skill + 'Button');
+          const cooldownDiv = document.getElementById(skill + 'Cooldown');
+          
+          if (skillCooldowns[skill] > 0) {
+            button.disabled = true;
+            cooldownDiv.classList.remove('hidden');
+            cooldownDiv.textContent = Math.ceil(skillCooldowns[skill] / 1000) + 's';
+          } else {
+            button.disabled = false;
+            cooldownDiv.classList.add('hidden');
+          }
+        }
+      }
+    }
+    
+    // ========== 迷宫生成 ==========
+    function generateMaze() {
+      walls = [];
+      for (let y = 0; y < ROWS; y++) {
+        walls[y] = [];
+        for (let x = 0; x < COLS; x++) {
+          if (x === 0 || x === COLS - 1 || y === 0 || y === ROWS - 1) {
+            walls[y][x] = 1;
+          } else {
+            walls[y][x] = 1;
+          }
+        }
+      }
+      
+      const stack = [];
+      const visited = [];
+      for (let y = 0; y < ROWS; y++) {
+        visited[y] = [];
+        for (let x = 0; x < COLS; x++) {
+          visited[y][x] = false;
+        }
+      }
+      
+      let currentX = player.gridX;
+      let currentY = player.gridY;
+      walls[currentY][currentX] = 0;
+      visited[currentY][currentX] = true;
+      stack.push({ x: currentX, y: currentY });
+      
+      const directions = [
+        { dx: 0, dy: -2 },
+        { dx: 2, dy: 0 },
+        { dx: 0, dy: 2 },
+        { dx: -2, dy: 0 }
+      ];
+      
+      while (stack.length > 0) {
+        const neighbors = [];
+        for (const dir of directions) {
+          const nx = currentX + dir.dx;
+          const ny = currentY + dir.dy;
+          
+          if (nx > 0 && nx < COLS - 1 && ny > 0 && ny < ROWS - 1 && !visited[ny][nx]) {
+            neighbors.push({ x: nx, y: ny, dir: dir });
+          }
+        }
+        
+        if (neighbors.length > 0) {
+          const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+          const wallX = currentX + next.dir.dx / 2;
+          const wallY = currentY + next.dir.dy / 2;
+          
+          walls[wallY][wallX] = 0;
+          walls[next.y][next.x] = 0;
+          visited[next.y][next.x] = true;
+          
+          stack.push({ x: next.x, y: next.y });
+          currentX = next.x;
+          currentY = next.y;
+        } else {
+          const popped = stack.pop();
+          if (stack.length > 0) {
+            currentX = stack[stack.length - 1].x;
+            currentY = stack[stack.length - 1].y;
+          }
+        }
+      }
+      
+      walls[player.gridY][player.gridX] = 0;
+    }
+    
+    function initMazeMode() {
+      player = {
+        gridX: 1,
+        gridY: 1,
+        x: 1 * CELL_SIZE,
+        y: 1 * CELL_SIZE,
+        color: '#FFD700'
+      };
+      
+      ghosts = [];
+      thorns = [];
+      collectibles = [];
+      collectiblesCollected = 0;
+      score = 0;
+      
+      generateMaze();
+      
+      // 生成刺：替换部分墙为刺（刺应该在墙的位置，而不是通道上）
+      for (let i = 0; i < 20; i++) {
+        let x, y;
+        let attempts = 0;
+        do {
+          x = Math.floor(Math.random() * COLS);
+          y = Math.floor(Math.random() * ROWS);
+          attempts++;
+          // 刺应该生成在墙的位置（walls[y][x] === 1），但不能是边界墙
+        } while ((walls[y][x] === 0 || 
+                 x === 0 || x === COLS - 1 || y === 0 || y === ROWS - 1 ||
+                 (x === player.gridX && y === player.gridY)) && attempts < 200);
+        
+        if (attempts < 200 && walls[y][x] === 1) {
+          thorns.push({ gridX: x, gridY: y, x: x * CELL_SIZE, y: y * CELL_SIZE });
+        }
+      }
+      
+      generateCollectibles();
+    }
+    
+    function initFreeMode() {
+      player = {
+        x: canvasSize / 2,
+        y: canvasSize / 2,
+        speed: 3,
+        dx: 0,
+        dy: 0,
+        color: '#FFD700'
+      };
+      
+      ghosts = [];
+      walls = [];
+      thorns = [];
+      collectibles = [];
+      collectiblesCollected = 0;
+      score = 0;
+    }
+    
+    function generateCollectibles() {
+      collectibles = [];
+      for (let i = 0; i < 20; i++) {
+        let x, y;
+        let attempts = 0;
+        do {
+          x = Math.floor(Math.random() * COLS);
+          y = Math.floor(Math.random() * ROWS);
+          attempts++;
+        } while ((walls[y][x] === 1 || 
+                 thorns.some(t => t.gridX === x && t.gridY === y) ||
+                 (x === player.gridX && y === player.gridY)) && attempts < 100);
+        
+        if (attempts < 100) {
+          collectibles.push({
+            gridX: x,
+            gridY: y,
+            x: x * CELL_SIZE + CELL_SIZE / 2,
+            y: y * CELL_SIZE + CELL_SIZE / 2
+          });
+        }
+      }
+    }
+    
+    // ========== 绘制函数 ==========
+    function drawWall(x, y) {
+      ctx.font = 'bold 24px "Microsoft YaHei", Arial, sans-serif';
+      ctx.fillStyle = '#4169E1';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('墙', x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2);
+    }
+    
+    function drawThorn(x, y) {
+      ctx.font = 'bold 24px "Microsoft YaHei", Arial, sans-serif';
+      ctx.fillStyle = '#00FF00';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('刺', x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2);
+    }
+    
+    function drawPlayer() {
+      ctx.font = 'bold 28px "Microsoft YaHei", Arial, sans-serif';
+      ctx.fillStyle = invincibleMode ? '#FFFF00' : player.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      if (gameMode === 'maze') {
+        ctx.fillText('我', player.x + CELL_SIZE / 2, player.y + CELL_SIZE / 2);
+      } else {
+        ctx.fillText('我', player.x, player.y);
+      }
+    }
+    
+    function drawGhost(ghost) {
+      ctx.font = 'bold 24px "Microsoft YaHei", Arial, sans-serif';
+      ctx.fillStyle = slowGhostsMode ? '#FF8888' : '#FF0000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      if (gameMode === 'maze') {
+        ctx.fillText('鬼', ghost.x + CELL_SIZE / 2, ghost.y + CELL_SIZE / 2);
+      } else {
+        ctx.fillText('鬼', ghost.x, ghost.y);
+      }
+    }
+    
+    function drawCollectible(collectible) {
+      ctx.beginPath();
+      ctx.arc(collectible.x, collectible.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFD700';
+      ctx.fill();
+    }
+    
+    // ========== 生成鬼 ==========
+    function generateGhost() {
+      const config = difficultyConfig[difficulty];
+      
+      if (gameMode === 'maze') {
+        let x, y;
+        let attempts = 0;
+        do {
+          x = Math.floor(Math.random() * COLS);
+          y = Math.floor(Math.random() * ROWS);
+          attempts++;
+        } while ((walls[y][x] === 1 || 
+                 thorns.some(t => t.gridX === x && t.gridY === y) ||
+                 (x === player.gridX && y === player.gridY)) && attempts < 100);
+        
+        if (attempts < 100) {
+          ghosts.push({
+            gridX: x,
+            gridY: y,
+            x: x * CELL_SIZE,
+            y: y * CELL_SIZE,
+            speed: config.ghostSpeed + Math.random() * 0.05
+          });
+        }
+      } else {
+        ghosts.push({
+          x: Math.floor(Math.random() * (canvasSize / boxSize)) * boxSize,
+          y: Math.floor(Math.random() * (canvasSize / boxSize)) * boxSize,
+        });
+      }
+    }
+    
+    // ========== 鬼的移动 ==========
+    function moveGhosts() {
+      if (invincibleMode) return;
+      
+      const speedMultiplier = slowGhostsMode ? 0.3 : 1.0;
+      
+      for (const ghost of ghosts) {
+        if (gameMode === 'maze') {
+          const directions = [
+            { dx: 0, dy: -1 },
+            { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 },
+            { dx: 1, dy: 0 }
+          ];
+          
+          let bestDir = null;
+          let minDist = Infinity;
+          
+          for (const dir of directions) {
+            const newX = ghost.gridX + dir.dx;
+            const newY = ghost.gridY + dir.dy;
+            
+            if (newX >= 0 && newX < COLS && newY >= 0 && newY < ROWS &&
+                walls[newY][newX] === 0) {
+              const dist = Math.abs(newX - player.gridX) + Math.abs(newY - player.gridY);
+              if (dist < minDist) {
+                minDist = dist;
+                bestDir = dir;
+              }
+            }
+          }
+          
+          if (bestDir && Math.random() < ghost.speed * speedMultiplier) {
+            ghost.gridX += bestDir.dx;
+            ghost.gridY += bestDir.dy;
+            ghost.x = ghost.gridX * CELL_SIZE;
+            ghost.y = ghost.gridY * CELL_SIZE;
+          }
+        } else {
+          const moveSpeed = speedMultiplier;
+          if (ghost.x < player.x) {
+            ghost.x += moveSpeed;
+          } else if (ghost.x > player.x) {
+            ghost.x -= moveSpeed;
+          }
+          if (ghost.y < player.y) {
+            ghost.y += moveSpeed;
+          } else if (ghost.y > player.y) {
+            ghost.y -= moveSpeed;
+          }
+        }
+      }
+    }
+    
+    // ========== 碰撞检测 ==========
+    function checkCollisions() {
+      for (const ghost of ghosts) {
+        let collided = false;
+        
+        if (gameMode === 'maze') {
+          collided = (ghost.gridX === player.gridX && ghost.gridY === player.gridY);
+        } else {
+          collided = (
+            player.x < ghost.x + boxSize &&
+            player.x + boxSize > ghost.x &&
+            player.y < ghost.y + boxSize &&
+            player.y + boxSize > ghost.y
+          );
+        }
+        
+        if (collided && !invincibleMode) {
+          endGame();
+          return;
+        }
+      }
+      
+      if (gameMode === 'maze') {
+        for (const thorn of thorns) {
+          if (thorn.gridX === player.gridX && thorn.gridY === player.gridY) {
+            if (!invincibleMode) {
+              endGame();
+              return;
+            }
+          }
+        }
+        
+        collectibles = collectibles.filter(collectible => {
+          if (collectible.gridX === player.gridX && collectible.gridY === player.gridY) {
+            collectiblesCollected++;
+            score += 10;
+            // 创建粒子效果
+            createParticles(collectible.x, collectible.y, 15, '#FFD700');
+            return false;
+          }
+          return true;
+        });
+        
+        if (collectibles.length === 0) {
+          generateCollectibles();
+        }
+      }
+    }
+    
+    // ========== 游戏结束 ==========
+    function endGame() {
+      gameOver = true;
+      const elapsed = Math.floor((Date.now() - startTime - totalPausedTime) / 1000);
+      let finalScore = score + elapsed * 2;
+      
+      // 更新统计
+      gameStats.totalGames++;
+      gameStats.totalTime += elapsed;
+      gameStats.totalScore += finalScore;
+      gameStats.totalCollectibles += collectiblesCollected;
+      saveStats();
+      updateStats();
+      
+      // 检查成就
+      checkAchievements();
+      
+      if (finalScore > highScore) {
+        highScore = finalScore;
+        localStorage.setItem('highScore', highScore.toString());
+        updateHighScoreDisplay();
+      }
+      
+      let stats = `坚持时间: ${elapsed}秒<br>分数: ${finalScore}`;
+      if (gameMode === 'maze') {
+        stats += `<br>收集物品: ${collectiblesCollected}`;
+      }
+      if (finalScore === highScore) {
+        stats += `<br><span style="color: #FFD700;">🎉 新纪录！</span>`;
+      }
+      document.getElementById('finalStats').innerHTML = stats;
+      document.getElementById('gameOver').classList.add('show');
+    }
+    
+    // ========== 更新UI ==========
+    let lastAchievementCheck = 0;
+    function updateUI() {
+      if (!gameStarted || gamePaused) return;
+      
+      const elapsed = Math.floor((Date.now() - startTime - totalPausedTime) / 1000);
+      document.getElementById('timer').textContent = `⏱️ 时间: ${elapsed}秒`;
+      document.getElementById('score').textContent = `⭐ 分数: ${score + elapsed * 2}`;
+      document.getElementById('mode').textContent = `🎮 模式: ${gameMode === 'maze' ? '迷宫模式' : '自由模式'}`;
+      document.getElementById('ghostCount').textContent = `👻 鬼数: ${ghosts.length}`;
+      
+      // 每5秒检查一次成就
+      if (Date.now() - lastAchievementCheck > 5000) {
+        checkAchievements();
+        lastAchievementCheck = Date.now();
+      }
+    }
+    
+    function updateHighScoreDisplay() {
+      document.getElementById('highScoreValue').textContent = highScore;
+    }
+    
+    // ========== 主游戏循环 ==========
+    function gameLoop() {
+      if (!gameStarted || gamePaused || gameOver) {
+        requestAnimationFrame(gameLoop);
+        return;
+      }
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      if (gameMode === 'maze') {
+        // 创建刺位置映射，用于快速查找
+        const thornMap = {};
+        for (const thorn of thorns) {
+          thornMap[`${thorn.gridX},${thorn.gridY}`] = true;
+        }
+        
+        // 绘制墙（跳过有刺的位置）
+        for (let y = 0; y < ROWS; y++) {
+          for (let x = 0; x < COLS; x++) {
+            if (walls[y][x] === 1 && !thornMap[`${x},${y}`]) {
+              drawWall(x, y);
+            }
+          }
+        }
+        
+        // 绘制刺（替换部分墙）
+        for (const thorn of thorns) {
+          drawThorn(thorn.gridX, thorn.gridY);
+        }
+        
+        for (const collectible of collectibles) {
+          drawCollectible(collectible);
+        }
+      } else {
+        ctx.font = '24px "Microsoft YaHei", Arial, sans-serif';
+        ctx.fillStyle = '#4169E1';
+        for (let x = 0; x < canvasSize; x += boxSize) {
+          ctx.fillText('墙', x, 0 + boxSize - 6);
+          ctx.fillText('墙', x, canvasSize - boxSize + boxSize - 6);
+        }
+        for (let y = boxSize; y < canvasSize - boxSize; y += boxSize) {
+          ctx.fillText('墙', 0, y + boxSize - 6);
+          ctx.fillText('墙', canvasSize - boxSize, y + boxSize - 6);
+        }
+      }
+      
+      if (gameMode === 'free') {
+        player.x += player.dx * player.speed;
+        player.y += player.dy * player.speed;
+        
+        if (player.x < boxSize) player.x = canvasSize - boxSize * 2;
+        if (player.x >= canvasSize - boxSize) player.x = boxSize;
+        if (player.y < boxSize) player.y = canvasSize - boxSize * 2;
+        if (player.y >= canvasSize - boxSize) player.y = boxSize;
+      }
+      
+      moveGhosts();
+      for (const ghost of ghosts) {
+        drawGhost(ghost);
+      }
+      
+      drawPlayer();
+      checkCollisions();
+      
+      // 更新和绘制粒子效果
+      updateParticles();
+      drawParticles();
+      
+      updateUI();
+      updateSkillCooldowns();
+      
+      if (invincibleMode) {
+        invincibleTime += 16;
+        if (invincibleTime >= 5000) {
+          invincibleMode = false;
+          invincibleTime = 0;
+        }
+      }
+      
+      if (slowGhostsMode) {
+        slowGhostsTime += 16;
+        if (slowGhostsTime >= 5000) {
+          slowGhostsMode = false;
+          slowGhostsTime = 0;
+        }
+      }
+      
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // ========== 事件监听 ==========
+    document.addEventListener('keydown', (event) => {
+      if (!gameStarted || gameOver || gamePaused) return;
+      
+      if (gameMode === 'maze') {
+        const key = event.key;
+        let newGridX = player.gridX;
+        let newGridY = player.gridY;
+        
+        if (key === 'ArrowUp' || key === 'w' || key === 'W') {
+          newGridY--;
+        } else if (key === 'ArrowDown' || key === 's' || key === 'S') {
+          newGridY++;
+        } else if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+          newGridX--;
+        } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+          newGridX++;
+        }
+        
+        if (newGridX >= 0 && newGridX < COLS && 
+            newGridY >= 0 && newGridY < ROWS &&
+            walls[newGridY][newGridX] === 0) {
+          player.gridX = newGridX;
+          player.gridY = newGridY;
+          player.x = player.gridX * CELL_SIZE;
+          player.y = player.gridY * CELL_SIZE;
+        }
+      } else {
+        if (event.key === 'ArrowUp') {
+          player.dx = 0;
+          player.dy = -1;
+        } else if (event.key === 'ArrowDown') {
+          player.dx = 0;
+          player.dy = 1;
+        } else if (event.key === 'ArrowLeft') {
+          player.dx = -1;
+          player.dy = 0;
+        } else if (event.key === 'ArrowRight') {
+          player.dx = 1;
+          player.dy = 0;
+        }
+      }
+      
+      if (event.key === 'Escape' || event.key === ' ') {
+        pauseGame();
+      }
+    });
+    
+    // 技能按钮
+    document.getElementById('invincibleButton').addEventListener('click', () => {
+      if (gameStarted && !gameOver) useSkill('invincible');
+    });
+    
+    document.getElementById('clearGhostsButton').addEventListener('click', () => {
+      if (gameStarted && !gameOver) useSkill('clearGhosts');
+    });
+    
+    document.getElementById('slowGhostsButton').addEventListener('click', () => {
+      if (gameStarted && !gameOver) useSkill('slowGhosts');
+    });
+    
+    // 技能按钮折叠
+    document.getElementById('skillsToggle').addEventListener('click', () => {
+      const buttons = document.getElementById('skillsButtons');
+      buttons.classList.toggle('hidden');
+      document.getElementById('skillsToggle').textContent = 
+        buttons.classList.contains('hidden') ? '技能 ▼' : '技能 ▲';
+    });
+    
+    // 暂停按钮
+    document.getElementById('pauseButton').addEventListener('click', pauseGame);
+    
+    // 模式切换
+    document.getElementById('mazeModeBtn').addEventListener('click', () => {
+      if (gameMode !== 'maze' && gameStarted) {
+        gameMode = 'maze';
+        initMazeMode();
+        document.getElementById('mazeModeBtn').classList.add('active');
+        document.getElementById('freeModeBtn').classList.remove('active');
+      }
+    });
+    
+    document.getElementById('freeModeBtn').addEventListener('click', () => {
+      if (gameMode !== 'free' && gameStarted) {
+        gameMode = 'free';
+        initFreeMode();
+        document.getElementById('freeModeBtn').classList.add('active');
+        document.getElementById('mazeModeBtn').classList.remove('active');
+      }
+    });
+    
+    // 定期生成鬼
+    setInterval(() => {
+      if (gameStarted && !gameOver && !gamePaused) {
+        const config = difficultyConfig[difficulty];
+        if (ghosts.length < config.maxGhosts) {
+          generateGhost();
+        }
+      }
+    }, difficultyConfig[difficulty].ghostSpawnRate);
+    
+    // 初始化
+    updateHighScoreDisplay();
+    loadAchievements();
+    updateStats();
+    gameLoop();
+  </script>
+</body>
+</html>
